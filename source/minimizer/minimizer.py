@@ -1,7 +1,7 @@
 from numpy import *
 from numpy.linalg import *
 
-def minimize( 
+def minimize(
     x_init,                         # The initial point from which the minimizer will iterate
     f,                              # The function to be minimized
     grad_f,                         # The gradient of the cost function
@@ -9,7 +9,8 @@ def minimize(
     direction_selection_function,   # Function that chooses the direction for the next iteration
     step_size_selection_function,   # Function that evaluates the selected direction
     direction_selection_params,     # Parameters that will be passed to the direction selection function
-    step_size_selection_params      # Parameters that will be passed to the direction condition function
+    step_size_selection_params,      # Parameters that will be passed to the direction condition function
+    max_iters = 1e4
 ):
     x = [ x_init ]
     d = [ ]
@@ -17,7 +18,7 @@ def minimize(
 
     k = 0
     x_k = x_init
-    while ( norm(grad_f(x_k)) > epsilon ):
+    while ( norm(grad_f(x_k)) > epsilon and k < max_iters):
         # select direction
         d_k = direction_selection_function(x = x[k], params = direction_selection_params)
 

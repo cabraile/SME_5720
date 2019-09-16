@@ -22,4 +22,4 @@ def grad_f(X):
 def f(X):
     Q = __QUADRATIC_Q
     b = __QUADRATIC_b
-    return transpose(X).dot(Q.dot(X)) - transpose(b).dot(X)
+    return (transpose(X).dot(Q.dot(X)) - transpose(b).dot(X))[0,0]
