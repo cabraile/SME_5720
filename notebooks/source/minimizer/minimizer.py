@@ -9,8 +9,9 @@ def minimize(
     direction_selection_function,   # Function that chooses the direction for the next iteration
     step_size_selection_function,   # Function that evaluates the selected direction
     direction_selection_params,     # Parameters that will be passed to the direction selection function
-    step_size_selection_params,      # Parameters that will be passed to the direction condition function
-    max_iters = 1e4
+    step_size_selection_params,     # Parameters that will be passed to the direction condition function
+    max_iters = 1e4,
+    callback = None                 # Callable that runs after each iteration. Provides x_k as parameter
 ):
     x = [ x_init ]
     d = [ ]
@@ -33,5 +34,6 @@ def minimize(
         d.append(d_k)
         alpha.append(alpha_k)
         k+=1
-
+        if callback is not None :
+            callback(x_k)
     return x, d, alpha, k

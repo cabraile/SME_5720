@@ -113,36 +113,100 @@ def constr_fun_4(X, y_max, X_dims):
 # =====================================
 
 def del_O_del_vi(v_i, v_j, delta_v_i, delta_v_j):
-    del_O = 0
+    del_O = 0.0
     diff = (v_i - v_j)
     if v_i >= v_j:
-        del_O = ( -4.0 / (delta_v_j ** 4) ) * diff * plus_operator( delta_v_j**2 - diff ** 2 )
+        factor = delta_v_j ** 2.0 - diff ** 2.0
+        if(factor > 0):
+            del_O = ( -4.0 / (delta_v_j ** 4.0) ) * diff * factor
     else:
-        del_O = ( -4.0 / (delta_v_i ** 4) ) * diff * plus_operator( delta_v_i**2 - diff ** 2 )
+        factor = delta_v_i ** 2.0 - diff ** 2.0
+        if(factor > 0):
+            del_O = ( -4.0 / (delta_v_i ** 4.0) ) * diff * factor
     return del_O
 
 def jac_E_O(X, X_dims):
     N = (X.shape[0])
-    grad_E = empty((2*N))
+    jac_E = empty((2*N+1))
     norm_factor = 2.0 / (N * (N+1))
     for k in range(N):
-        grad_E_xk = norm_factor
-        grad_E_yk = norm_factor
+        jac_E_xk = norm_factor
+        jac_E_yk = norm_factor
         x_k = X[k,0]; h_k = X_dims[k,0]
         y_k = X[k,1]; v_k = X_dims[k,1]
         for i in range(N):
             if(i == k):
                 continue
-            x_i = X[i,0]; h_i = X_dims[i,0]; 
+            x_i = X[i,0]; h_i = X_dims[i,0] 
             y_i = X[i,1]; v_i = X_dims[i,1]
             # Grad for x
             del_O_del_xk = del_O_del_vi(x_k, x_i, h_i, h_k)
-            grad_E_xk += O_ij(y_i, v_i, y_k, v_k) * del_O_del_xk
+            jac_E_xk += O_ij(y_i, v_i, y_k, v_k) * del_O_del_xk
             # Grad for y
             del_O_del_yk = del_O_del_vi(y_k, y_i, v_i, v_k)
-            grad_E_yk += O_ij(x_i, h_i, x_k, h_k) * del_O_del_yk
-        grad_E[k*2] = grad_E_xk
-        grad_E[k*2+1] = grad_E_yk
-    return grad_E
+            jac_E_yk += O_ij(x_i, h_i, x_k, h_k) * del_O_del_yk
+        jac_E[k*2] = jac_E_xk
+        jac_E[k*2+1] = jac_E_yk
+    jac_E[-1] = 0.0
+    return jac_E
+
+def jac_E_N(vec_x, vec_y, w, L, delta_x, delta_y):
+    N = vec_x.shape[0]
+    jac_E = empty((2*N+1))
+    eta = ((1.0 * N)**2) / (2.0 * ( (linalg.norm(delta_x) ** 2 ) + (linalg.norm(delta_y) ** 2) ) )
+
+    # Makes matrix multiplication easier, so does my life
+    vec_x.reshape((N,1)) 
+    vec_y.reshape((N,1))
+
+    # Reduces computational burden
+    L_dot_vec_x = L.dot(vec_x); L_dot_vec_y = L.dot(vec_y)
+    w_times_delta_x = w * delta_x; w_times_delta_y = w * delta_y
+
+    # partial w.r.t. x_k and y_k
+    for k in range(N):
+        sum_xk = 0.0
+        sum_yk = 0.0
+        for i in range(N):
+            sum_xk += L[i,k] * ( L_dot_vec_x[i] - w_times_delta_x[i] )
+            sum_yk += L[i,k] * ( L_dot_vec_y[i] - w_times_delta_y[i] )
+        partial_x_k = 2.0 * eta * sum_xk
+        partial_y_k = 2.0 * eta * sum_yk
+        jac_E[2*k] = partial_x_k
+        jac_E[2*k + 1] = partial_y_k
+
+    # partial w.r.t. w
+    x_side = 0
+    y_side = 0
+    for i in range(N):
+        x_side += (L_dot_vec_x[i] - w_times_delta_x[i]) * delta_x[i]
+        y_side += (L_dot_vec_y[i] - w_times_delta_y[i]) * delta_y[i]
+    jac_E[-1] = - 2.0 * eta * (x_side + y_side)
+    return jac_E
+
+def hess_E_N(vec_x, vec_y, w, L, delta_x, delta_y):
+    N = vec_x.shape[0]
+    H = zeros((N*2+1,N*2+1))
+    eta = ((1.0 * N)**2) / (2.0 * ( (linalg.norm(delta_x) ** 2 ) + (linalg.norm(delta_y) ** 2) ) )
+    vec_x.reshape((N,1)) 
+    vec_y.reshape((N,1))
+    # (d/dx | d/dx) e (d/dy | d/dy)
+    for i in range(N):
+        for k in range(N):
+            sum_factor = 0
+            for j in range(N):
+                sum_factor += L[j,k] * L[j,i]
+            H[i*2,k*2] = 2.0 * eta * sum_factor
+            H[i*2,k*2] = 2.0 * eta * sum_factor
+    # Partials wrt w
+    for k in range(N):
+        sum_x = 0; sum_y = 0
+        for j in range(N):
+            sum_x += L[j,k] * delta_x[j]
+            sum_y += L[j,k] * delta_y[j]
+        H[-1,2*k]   = - 2.0 * eta * sum_x
+        H[-1,2*k+1] = - 2.0 * eta * sum_y
+    H[-1,-1] = N ** 2.0 # partial w.r.t. w
+    return H
 
 # =====================================

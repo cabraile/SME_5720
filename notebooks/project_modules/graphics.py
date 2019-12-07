@@ -38,8 +38,10 @@ def draw_windows(
     # Plot points
     colors_idx=window_cluster_ids[:].astype('int32')
     colors = [ color_list[color_idx] for color_idx in colors_idx]
-    scatter(window_points[:,0], window_points[:,1], c=colors)
+    scatter(window_points[:,0], window_points[:,1], c=colors, alpha=0.3)
 
     # Plot Clusters
-    ax.scatter(window_clusters[:,0], window_clusters[:,1], c="red", marker="*")
+    colors_idx=arange(0,n_clusters,1)
+    colors = [ color_list[color_idx] for color_idx in colors_idx]
+    ax.scatter(window_clusters[:,0], window_clusters[:,1], c=colors, marker="*")
     return
