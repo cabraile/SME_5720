@@ -113,12 +113,6 @@ def degree(G):
     D = zeros((N))
     for i in range(N):
         D[i] = sum(G[i] != 0)
-    #for from_idx in range(N):
-    #    degree = 0.0
-    #    for for_idx in range(N):
-    #        if(G[from_idx, for_idx] != 0):
-    #            degree += 1.0
-    #    D[from_idx] = degree
     return D
 
 def laplacian_graph(X, K):
@@ -137,16 +131,7 @@ def laplacian_graph(X, K):
 
 def laplacian_graph(X, K):
     A = adjacency_matrix(X, K)
-    #D = degree(A)
     N = A.shape[0]
-    #L = zeros((N,N))
-    #for i in range(N):
-    #    for j in range(N):
-    #        if (i != j) and A[i,j] != 0:
-    #            L[i,j] = -1.0 / (1.0 * D[i])
-    #            #L[i,j] = -1.0 / (1.0 * sqrt(D[i] * D[j]))
-    #        elif i == j:
-    #            L[i,j] = 1.0
     D = diag(degree(A))
     L = eye(N) - linalg.inv(D).dot(A)
     return L
