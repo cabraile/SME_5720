@@ -50,10 +50,14 @@ def E_O(X, X_dims):
 
 def E_N(X, w, L, delta_x, delta_y):
     N = X.shape[0]
+    delta_x = delta_x.reshape((N,1))
+    delta_y = delta_y.reshape((N,1))
+    vec_x = X[:,0].reshape((N,1))
+    vec_y = X[:,1].reshape((N,1))
     norm_factor = (N ** 2.0)/( 2.0 * (linalg.norm(delta_x) ** 2 +linalg.norm(delta_y) ** 2) )
-    diff_x = linalg.norm( L.dot(X[:,0]) - w * delta_x ) ** 2
-    diff_y = linalg.norm(L.dot(X[:,1]) - w * delta_y) ** 2 
-    diff_factor = ( diff_x + diff_y)
+    diff_x = linalg.norm( L.dot(vec_x) - w * delta_x ) ** 2
+    diff_y = linalg.norm(L.dot(vec_y) - w * delta_y) ** 2 
+    diff_factor = ( diff_x + diff_y )
     sum_e = norm_factor * diff_factor
     return sum_e
 
@@ -152,7 +156,7 @@ def jac_E_O(X, X_dims):
 
 def jac_E_N(vec_x, vec_y, w, L, delta_x, delta_y):
     N = vec_x.shape[0]
-    jac_E = empty((2*N+1))
+    jac_E = zeros((2*N+1))
     eta = ((1.0 * N)**2) / (2.0 * ( (linalg.norm(delta_x) ** 2 ) + (linalg.norm(delta_y) ** 2) ) )
 
     # Makes matrix multiplication easier, so does my life
@@ -183,13 +187,11 @@ def jac_E_N(vec_x, vec_y, w, L, delta_x, delta_y):
         y_side += (L_dot_vec_y[i] - w_times_delta_y[i]) * delta_y[i]
     jac_E[-1] = - 2.0 * eta * (x_side + y_side)
     return jac_E
-
-def hess_E_N(vec_x, vec_y, w, L, delta_x, delta_y):
-    N = vec_x.shape[0]
+"""
+def hess_E_N(L, delta_x, delta_y):
+    N = L.shape[0]
     H = zeros((N*2+1,N*2+1))
     eta = ((1.0 * N)**2) / (2.0 * ( (linalg.norm(delta_x) ** 2 ) + (linalg.norm(delta_y) ** 2) ) )
-    vec_x.reshape((N,1)) 
-    vec_y.reshape((N,1))
     # (d/dx | d/dx) e (d/dy | d/dy)
     for i in range(N):
         for k in range(N):
@@ -209,4 +211,44 @@ def hess_E_N(vec_x, vec_y, w, L, delta_x, delta_y):
     H[-1,-1] = N ** 2.0 # partial w.r.t. w
     return H
 
+def d_o_v_i_partial_v_j(vec_v, vec_delta, i, j):
+    d_o_v = 0.0
+    if vec_v[i] >= vec_v[j] :
+        f1 = vec_delta[j] ** 2 - (vec_v[i] - vec_v[j]) ** 2
+        if f1 > 0.0: 
+            d_o_v = -4.0 / (vec_delta[j] ** 4) * ( - plus_operator(f1) + 2.0 * (vec_v[i] - vec_v[j]) ** 2 )
+    else: # x_i < x_j
+        f2 = vec_delta[i] ** 2 - (vec_v[i] - vec_v[j]) ** 2
+        if f2 > 0:
+            d_o_v = -4.0 / (vec_delta[i] ** 4) * ( - plus_operator(f2) + 2.0 * (vec_v[i] - vec_v[j]) ** 2 )
+    return d_o_v
+
+def hess_E_O(vec_x, vec_y, vec_h, vec_v):
+    N = vec_x.shape[0]
+    H = zeros((N*2+1,N*2+1))
+    norm_factor = 2.0 / (N * (N+1))
+    for i in range(N):
+        for j in range(N):
+            if(i == j):
+                continue
+
+            # partial of d_x w.r.t. x
+            o_y = O_ij(vec_y[i], vec_v[i], vec_y[j], vec_v[j])
+            d_o_x = d_o_v_i_partial_v_j(vec_x, vec_h, i, j)
+            H[i*2,j*2] =  norm_factor * o_y * d_o_x
+
+            # partial of d_y w.r.t. y
+            o_x = O_ij(vec_x[i], vec_h[i], vec_x[j], vec_h[j])
+            d_o_y = d_o_v_i_partial_v_j(vec_y, vec_v, i, j)
+            H[i*2+1,j*2+1] =  norm_factor * o_x * d_o_y
+
+            # mixed partials
+            dO_dx = del_O_del_vi(vec_x[i], vec_x[j], vec_h[i], vec_h[j])
+            dO_dy = del_O_del_vi(vec_y[i], vec_y[j], vec_v[i], vec_v[j])
+            H[i*2+1,j*2] = norm_factor * dO_dx * dO_dy
+            H[i*2,j*2+1] = norm_factor * dO_dy * dO_dx
+
+    # Partials w.r.t. w are 0
+    return H
+"""
 # =====================================

@@ -111,12 +111,14 @@ def degree(G):
     """
     N = G.shape[0]
     D = zeros((N))
-    for from_idx in range(N):
-        degree = 0.0
-        for for_idx in range(N):
-            if(G[from_idx, for_idx] != 0):
-                degree += 1.0
-        D[from_idx] = degree
+    for i in range(N):
+        D[i] = sum(G[i] != 0)
+    #for from_idx in range(N):
+    #    degree = 0.0
+    #    for for_idx in range(N):
+    #        if(G[from_idx, for_idx] != 0):
+    #            degree += 1.0
+    #    D[from_idx] = degree
     return D
 
 def laplacian_graph(X, K):
@@ -132,18 +134,35 @@ def laplacian_graph(X, K):
                 L[i,j] = 1.0
     return L
 
-def conectivity_scatter(X, A):
+
+def laplacian_graph(X, K):
+    A = adjacency_matrix(X, K)
+    #D = degree(A)
+    N = A.shape[0]
+    #L = zeros((N,N))
+    #for i in range(N):
+    #    for j in range(N):
+    #        if (i != j) and A[i,j] != 0:
+    #            L[i,j] = -1.0 / (1.0 * D[i])
+    #            #L[i,j] = -1.0 / (1.0 * sqrt(D[i] * D[j]))
+    #        elif i == j:
+    #            L[i,j] = 1.0
+    D = diag(degree(A))
+    L = eye(N) - linalg.inv(D).dot(A)
+    return L
+
+def connectivity_scatter(X, A):
     scatter(X[:,0], X[:,1])
     for i in range(A.shape[0]):
         for j in range(A.shape[0]):
             if(A[i,j] != 0):
                 arrow(X[i,0],X[i,1], X[j,0] - X[i,0], X[j,1] - X[i,1], shape='full', color='b')
     show()
+    return
 
-"""
-G = graph_utils.laplacian_graph(X)
-clf()
-fig, ax = subplots()
-aa = ax.imshow(G)
-cbar = fig.colorbar(aa)
-"""
+def display_laplacian(L):
+    clf()
+    fig, ax = subplots()
+    aa = ax.imshow(L)
+    cbar = fig.colorbar(aa)
+    return
